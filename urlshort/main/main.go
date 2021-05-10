@@ -1,13 +1,25 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/liamcoop/gophercises/urlshort"
 )
 
 func main() {
+
+	filePtr := flag.String("f", "", "file for input")
+	flag.Parse()
+
+	data, err := ioutil.ReadFile(*filePtr)
+	if err != nil {
+		panic(err)
+	}
+
 	mux := defaultMux()
 
 	// Build the MapHandler using the mux as the fallback
@@ -17,22 +29,20 @@ func main() {
 	}
 	mapHandler := urlshort.MapHandler(pathsToUrls, mux)
 
-	// Build the YAMLHandler using the mapHandler as the
-	// fallback
-	/*
-			yaml := `
-		- path: /urlshort
-		  url: https://github.com/gophercises/urlshort
-		- path: /urlshort-final
-		  url: https://github.com/gophercises/urlshort/tree/solution
-		`
-			yamlHandler, err := urlshort.YAMLHandler([]byte(yaml), mapHandler)
-			if err != nil {
-				panic(err)
-			}
-			fmt.Println("Starting the server on :8080")
-			http.ListenAndServe(":8080", yamlHandler)
-	*/
+	ext := strings.ToLower(strings.Split(*filePtr, ".")[1])
+	var handler http.HandlerFunc
+
+	if ext == "yaml" {
+		handler, err = urlshort.YAMLHandler([]byte(data), mapHandler)
+	} else if ext == "json" {
+		handler, err = urlshort.JSONHandler([]byte(data), mapHandler)
+	}
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Starting the server on :8080")
+	http.ListenAndServe(":8080", handler)
 }
 
 func defaultMux() *http.ServeMux {
