@@ -1,3 +1,3 @@
-module github.com/LiamCoop/gophercises/E2
+module github.com/liamcoop/gophercises/urlshort
 
 go 1.16
