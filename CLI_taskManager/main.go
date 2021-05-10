@@ -1,11 +1,7 @@
 package main
 
-import (
-  "fmt"
-
-  "github.com/spf13/cobra"
-)
+import "github.com/liamcoop/gophercises/CLI_taskManager/cmd"
 
 func main() {
-
+	cmd.Execute()
 }
