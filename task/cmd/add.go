@@ -16,23 +16,51 @@ limitations under the License.
 package cmd
 
 import (
+	"encoding/binary"
+	"errors"
 	"fmt"
 
+	"github.com/boltdb/bolt"
 	"github.com/spf13/cobra"
 )
 
 // addCmd represents the add command
 var addCmd = &cobra.Command{
 	Use:   "add",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Used to add tasks to the TODO list",
+	Long:  "Used to add tasks to the TODO list",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return errors.New("requires a TODO item to add")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("add called")
+		db, err := bolt.Open("tasks.db", 0600, nil)
+		if err != nil {
+			panic("DB can't be opened")
+		}
+
+		err = db.View(func(tx *bolt.Tx) error {
+			return db.Update(func(tx *bolt.Tx) error {
+				b, err := tx.CreateBucketIfNotExists([]byte("todos"))
+				if err != nil {
+					return fmt.Errorf("create bucket: %s", err)
+				}
+				for _, v := range args {
+					id, _ := b.NextSequence()
+					tid := make([]byte, 8)
+					binary.BigEndian.PutUint64(tid, uint64(id))
+					err := b.Put(tid, []byte(v))
+					if err != nil {
+						return err
+					}
+				}
+				return nil
+			})
+		})
+
+		db.Close()
 	},
 }
 

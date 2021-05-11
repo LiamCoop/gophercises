@@ -16,23 +16,53 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
+	"encoding/binary"
+	"errors"
+	"strconv"
 
+	"github.com/boltdb/bolt"
 	"github.com/spf13/cobra"
 )
 
 // doCmd represents the do command
 var doCmd = &cobra.Command{
 	Use:   "do",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Marks a TODO list item as completed",
+	Long:  "Marks a TODO list item as completed",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return errors.New("Requires a valid todo item")
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("do called")
+		db, err := bolt.Open("tasks.db", 0600, nil)
+		if err != nil {
+			panic("DB can't be opened")
+		}
+
+		err = db.Update(func(tx *bolt.Tx) error {
+
+			b := tx.Bucket([]byte("todos"))
+			for _, v := range args {
+				tid := make([]byte, 8)
+				num, err := strconv.Atoi(v)
+				if err != nil {
+					return err
+				}
+				binary.BigEndian.PutUint64(tid, uint64(num))
+				err = b.Delete(tid)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})
+		if err != nil {
+			panic("error on dbView")
+		}
+		db.Close()
 	},
 }
 

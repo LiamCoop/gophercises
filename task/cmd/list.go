@@ -16,23 +16,40 @@ limitations under the License.
 package cmd
 
 import (
+	"encoding/binary"
 	"fmt"
 
+	"github.com/boltdb/bolt"
 	"github.com/spf13/cobra"
 )
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "lists all current items",
+	Long:  "lists all current items in the TODO list",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("list called")
+		db, err := bolt.Open("tasks.db", 0600, nil)
+		if err != nil {
+			panic("DB can't be opened")
+		}
+
+		err = db.View(func(tx *bolt.Tx) error {
+
+			b := tx.Bucket([]byte("todos"))
+
+			c := b.Cursor()
+
+			for k, v := c.First(); k != nil; k, v = c.Next() {
+				fmt.Printf("%d: %s\n", binary.BigEndian.Uint64(k), v)
+			}
+
+			return nil
+		})
+		if err != nil {
+			panic("error on dbVIew")
+		}
+		db.Close()
 	},
 }
 

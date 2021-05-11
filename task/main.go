@@ -15,7 +15,9 @@ limitations under the License.
 */
 package main
 
-import "task/cmd"
+import (
+	"task/cmd"
+)
 
 func main() {
 	cmd.Execute()

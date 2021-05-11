@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/boltdb/bolt"
 	"github.com/spf13/cobra"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -48,14 +49,26 @@ to quickly create a Cobra application.`,
 		fmt.Printf("\n")
 
 		fmt.Println("Available commands:")
-		fmt.Println("\tadd\t\tAdd a new task to your TODO list")
-		fmt.Println("\tdo\t\tMark a task on your TODO list as complete")
-		fmt.Println("\tlist\t\tList all of your incomplete tasks")
+		fmt.Println("\tadd\tAdd a new task to your TODO list")
+		fmt.Println("\tdo\tMark a task on your TODO list as complete")
+		fmt.Println("\tlist\tList all of your incomplete tasks")
 		fmt.Printf("\n")
 
-		fmt.Println("Use \" task [command] --help\" for more information about a command.")
+		fmt.Println("Use \"task [command] --help\" for more information about a command.")
 		fmt.Printf("\n")
 
+		db, err := bolt.Open("tasks.db", 0600, nil)
+		if err != nil {
+			panic("DB can't be opened")
+		}
+		defer db.Close()
+		db.Update(func(tx *bolt.Tx) error {
+			_, err := tx.CreateBucketIfNotExists([]byte("todos"))
+			if err != nil {
+				return fmt.Errorf("create bucket: %s", err)
+			}
+			return nil
+		})
 	},
 }
 

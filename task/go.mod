@@ -3,6 +3,7 @@ module task
 go 1.13
 
 require (
+	github.com/boltdb/bolt v1.3.1
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
